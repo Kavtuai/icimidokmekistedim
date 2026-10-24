@@ -1,0 +1,2 @@
+# icimidokmekistedim
+icimi dokmek istedim..
