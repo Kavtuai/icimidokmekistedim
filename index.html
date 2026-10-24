@@ -4,42 +4,30 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#f6efec" />
-  <meta name="description" content="Sana söyleyemediklerim. Bir hikâyenin içinde kalan bütün kelimeler." />
+  <meta name="description" content="Kalbimde kalanlar." />
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Kalbimde Kalanlar" />
-  <meta property="og:description" content="Sana söyleyemediklerim…" />
+  <meta property="og:description" content="İçimde kalan her şey." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;450;500;550;600&family=DM+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="./style.css" />
-  <title>Kalbimde Kalanlar — Sana söyleyemediklerim</title>
+  <title>Kalbimde Kalanlar</title>
 </head>
 <body>
-  <div class="device" id="device">
-    <header class="masthead">
-      <a class="wordmark" href="#kapak" aria-label="En başa dön">kalbimde <i>kalanlar.</i></a>
-      <span class="masthead-right" id="readingStatus">bir mektup</span>
-    </header>
+  <div class="device">
     <div class="read-progress" aria-label="Okuma ilerlemesi" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="readProgress"><span id="progressFill"></span></div>
-    <main class="reader" id="reader" tabindex="0" aria-label="Kaydırarak okunabilen mektup">
-      <section class="cover" id="kapak" data-step="0">
-        <div class="cover-index">SANA SÖYLEYEMEDİKLERİM <span>— 01</span></div>
-        <div class="cover-center">
-          <div class="cover-emblem" aria-hidden="true">
-            <svg viewBox="0 0 140 140" fill="none"><path d="M23 84C27 54 44 34 70 35c27 1 43 21 46 49" stroke="currentColor" stroke-width=".8" opacity=".55"/><path d="M33 91C39 67 50 51 70 51c19 0 32 16 37 40" stroke="currentColor" stroke-width=".8" opacity=".45"/><path d="M53 76c-13-14-33 5-14 23l31 28 31-28c19-18-1-37-14-23L70 91 53 76Z" stroke="currentColor" stroke-width="1.1"/><path d="M12 104h116" stroke="currentColor" stroke-width=".6" opacity=".3"/></svg>
-          </div>
-          <p class="cover-overline">İçimde kalan her şey için.</p>
-          <h1>Bir zamanlar<br/><em>biz.</em></h1>
-          <p class="cover-sub">Gerçekten doğru kişiyi bulduğumdan o kadar emindim ki…</p>
-        </div>
-        <button class="start-button" id="startButton" type="button"><span>Okumaya başla</span><span aria-hidden="true">↓</span></button>
-        <p class="cover-bottom">İki yılın içinden.</p>
-      </section>
+    <main id="reader" class="reader" aria-label="Aşağı kaydırarak okunan mektup">
       <div id="chapters"></div>
     </main>
-    <footer class="reading-footer" id="readingFooter" aria-hidden="true"><span id="pageCount">00 / 28</span><div class="footer-line"></div><span id="footerLabel">aşağı kaydır</span><span class="down-arrow" id="downArrow">↓</span></footer>
+    <footer class="reading-footer" aria-hidden="true">
+      <span id="pageCount">01 / 28</span>
+      <div class="footer-line"></div>
+      <span id="footerLabel">aşağı kaydır</span>
+      <span class="down-arrow" id="downArrow">↓</span>
+    </footer>
   </div>
-  <script src="./content.js"></script>
-  <script src="./app.js"></script>
+  <script src="./content.js" defer></script>
+  <script src="./app.js" defer></script>
 </body>
 </html>
