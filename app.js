@@ -1,23 +1,88 @@
-const chapters=window.LETTER.chapters;
-const story=document.querySelector('#story');
-const safe=(v)=>String(v??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
-// Titles are trusted editable content; <i> is intentionally supported for typographic emphasis.
-const titleHtml=(v)=>safe(v).replaceAll('&lt;i&gt;','<i>').replaceAll('&lt;/i&gt;','</i>').replaceAll('\n','<br>');
-chapters.forEach((c,i)=>{
- const section=document.createElement('section');section.className=`scene scene--${c.kind}`;section.id=i===0?'baslangic':`sayfa-${i+1}`;section.dataset.index=i;
- const number=c.number?`<span class="chapter-number">${safe(c.number)} <span class="chapter-line"></span></span>`:'';
- const tag=`<span class="eyebrow">${safe(c.tag)}</span>`;
- const heading=`<h1 class="scene-title">${titleHtml(c.title)}</h1>`;
- const highlight=c.highlight?`<p class="highlight">${safe(c.highlight)}</p>`:'';
- const body=`<p class="scene-body">${safe(c.body)}</p>`;
- const footer=c.footer?`<span class="scene-footer">${safe(c.footer)}</span>`:'';
- const ornament=c.kind==='cover'?'<div class="flower" aria-hidden="true"><span></span><span></span><span></span><span></span><b>✦</b></div>':c.kind==='pause'?'<div class="orbit" aria-hidden="true"><span>✳</span></div>':c.kind==='ending'?'<div class="final-line" aria-hidden="true"><span>♡</span></div>':'';
- section.innerHTML=`<div class="scene-backdrop" aria-hidden="true"></div><div class="scene-inner">${number}<div class="scene-content">${tag}${heading}${highlight}${body}${ornament}</div>${footer}</div>`;
- story.appendChild(section);
-});
-const scenes=[...document.querySelectorAll('.scene')],fill=document.querySelector('#progressFill'),counter=document.querySelector('#pageCounter'),caption=document.querySelector('#bottomCaption');
-let active=0;
-const update=(i)=>{active=i;fill.style.width=`${(i+1)/scenes.length*100}%`;counter.textContent=`${String(i+1).padStart(2,'0')} / ${String(scenes.length).padStart(2,'0')}`;caption.textContent=i===scenes.length-1?'son sayfa':i===0?'biraz aşağı kaydır':'okumaya devam et';document.body.classList.toggle('at-end',i===scenes.length-1)};
-const observer=new IntersectionObserver(entries=>{for(const e of entries){if(e.isIntersecting){e.target.classList.add('is-visible');if(e.intersectionRatio>=.52)update(Number(e.target.dataset.index));}}},{root:story,threshold:[.15,.52,.8]});scenes.forEach(s=>observer.observe(s));update(0);
-window.addEventListener('keydown',e=>{if(document.querySelector('#helpDialog').open)return;if(['ArrowDown','PageDown',' '].includes(e.key)){e.preventDefault();scenes[Math.min(active+1,scenes.length-1)].scrollIntoView({behavior:'smooth'});}if(['ArrowUp','PageUp'].includes(e.key)){e.preventDefault();scenes[Math.max(active-1,0)].scrollIntoView({behavior:'smooth'});}});
-const dialog=document.querySelector('#helpDialog');document.querySelector('#helpButton').addEventListener('click',()=>dialog.showModal());document.querySelector('#closeHelp').addEventListener('click',()=>dialog.close());dialog.addEventListener('click',e=>{if(e.target===dialog)dialog.close()});
+(() => {
+  'use strict';
+  const chapters = Array.isArray(window.MEKTUP) ? window.MEKTUP : [];
+  const reader = document.getElementById('reader');
+  const wrapper = document.getElementById('chapters');
+  const progress = document.getElementById('readProgress');
+  const fill = document.getElementById('progressFill');
+  const count = document.getElementById('pageCount');
+  const footerLabel = document.getElementById('footerLabel');
+  const status = document.getElementById('readingStatus');
+  const arrow = document.getElementById('downArrow');
+  const escapeHTML = input => String(input ?? '').replace(/[&<>"']/g, char => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[char]));
+
+  const renderChapter = (chapter, index) => {
+    const layoutWords = String(chapter.layout || 'letter').split(' ').filter(Boolean);
+    const classNames = layoutWords.map(name => `chapter--${name.replace(/[^a-z-]/g, '')}`).join(' ');
+    const root = document.createElement('section');
+    root.className = `chapter ${classNames}`;
+    root.id = `bolum-${index + 1}`;
+    root.dataset.step = String(index + 1);
+    root.setAttribute('aria-label', `${index + 1}. bölüm: ${chapter.title}`);
+    const paragraphs = (chapter.paragraphs || []).map(p => `<p>${escapeHTML(p)}</p>`).join('');
+    const quote = chapter.quote ? `<blockquote class="chapter-quote">${escapeHTML(chapter.quote)}</blockquote>` : '';
+    const lines = chapter.lines?.length ? `<ul class="${layoutWords.includes('poem') ? 'poem-lines' : 'quote-list'}">${chapter.lines.map(line => `<li>${escapeHTML(line)}</li>`).join('')}</ul>` : '';
+    const list = chapter.lines?.length && !layoutWords.includes('poem') ? lines.replace('quote-list', 'line-list') : lines;
+    const note = chapter.note ? `<p class="chapter-note">${escapeHTML(chapter.note)}</p>` : '';
+    const pageBody = layoutWords.includes('message') ? `<div class="quote-paper">${quote}</div>${note}${paragraphs}` : `${quote}${list}${paragraphs}${note}`;
+    const ending = layoutWords.includes('ending') ? `<span aria-hidden="true" class="ending-heart">♡</span><button type="button" class="restart-button" id="restartButton">En baştan oku ↗</button>` : '';
+    const ornament = layoutWords.includes('poem') ? `<span aria-hidden="true" class="poem-mark">✳</span>` : '';
+    root.innerHTML = `<div class="chapter-inner"><div class="chapter-kicker">${escapeHTML(chapter.label)}</div><h2>${escapeHTML(chapter.title)}</h2>${pageBody}${ornament}${ending}</div>`;
+    return root;
+  };
+  chapters.forEach((chapter, index) => wrapper.appendChild(renderChapter(chapter, index)));
+  const pages = [document.getElementById('kapak'), ...wrapper.children];
+  const pad = n => String(n).padStart(2, '0');
+  const scrollToPage = (index, smooth = true) => {
+    const page = pages[index];
+    if (page) reader.scrollTo({ top: page.offsetTop, behavior: smooth && !matchMedia('(prefers-reduced-motion: reduce)').matches ? 'smooth' : 'instant' });
+  };
+  document.getElementById('startButton').addEventListener('click', () => scrollToPage(1));
+  document.getElementById('restartButton')?.addEventListener('click', () => scrollToPage(0));
+  document.querySelector('.wordmark').addEventListener('click', e => { e.preventDefault(); scrollToPage(0); });
+
+  let active = -1;
+  let rafPending = false;
+  function update() {
+    rafPending = false;
+    const scrollMid = reader.scrollTop + reader.clientHeight * .48;
+    let current = 0;
+    // Detect position without depending on a fixed page height: long messages scroll naturally.
+    for (let i = 1; i < pages.length; i++) {
+      if (pages[i].offsetTop <= scrollMid) current = i;
+      else break;
+    }
+    if (current !== active) {
+      active = current;
+      const finished = current === pages.length - 1;
+      count.textContent = `${pad(current)} / ${pad(chapters.length)}`;
+      status.textContent = current === 0 ? 'bir mektup' : finished ? 'son sayfa' : 'okurken';
+      footerLabel.textContent = current === 0 ? 'aşağı kaydır' : finished ? 'kalbimde kalanlar' : 'devam et';
+      arrow.textContent = finished ? '♡' : '↓';
+    }
+    const total = Math.max(1, reader.scrollHeight - reader.clientHeight);
+    const pct = Math.min(100, Math.max(0, reader.scrollTop / total * 100));
+    fill.style.width = `${pct}%`;
+    progress.setAttribute('aria-valuenow', String(Math.round(pct)));
+  }
+  reader.addEventListener('scroll', () => {
+    if (!rafPending) { rafPending = true; requestAnimationFrame(update); }
+  }, { passive: true });
+  document.addEventListener('keydown', e => {
+    if (['ArrowDown', 'ArrowUp', 'PageDown', 'PageUp'].includes(e.key) && !['INPUT','TEXTAREA'].includes(document.activeElement?.tagName || '')) {
+      e.preventDefault();
+      scrollToPage(Math.min(pages.length - 1, Math.max(0, active + (['ArrowDown','PageDown'].includes(e.key) ? 1 : -1))));
+    }
+  });
+  if ('IntersectionObserver' in window) {
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) { entry.target.classList.add('is-inview'); observer.unobserve(entry.target); }
+      });
+    }, { root: reader, rootMargin: '0px 0px -40px 0px', threshold: 0.12 });
+    wrapper.querySelectorAll('.chapter').forEach(el => observer.observe(el));
+  } else wrapper.querySelectorAll('.chapter').forEach(el => el.classList.add('is-inview'));
+  update();
+})();
